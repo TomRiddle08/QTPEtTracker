@@ -16,10 +16,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Qt
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Qt (official method)
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.5.0'  # Или '5.15.2' для Qt5
+          version: '6.5.0'
           modules: 'qtbase qttools qtdeclarative qt5compat'
           cached: true
 
@@ -28,6 +33,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
+            cmake \
+            ninja-build \
+            libgl1-mesa-dev \
             lcov \
             gcovr
 
@@ -35,12 +43,12 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} ..  # Для Qt5: ${{ env.Qt5_DIR }}
+          cmake -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} ..
 
       - name: Build project
         run: |
           cd build
-          make -j4
+          cmake --build . --parallel 4
 
       - name: Run tests
         run: |
