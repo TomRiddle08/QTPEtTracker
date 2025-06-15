@@ -1,0 +1,41 @@
+name: QtPetTracker CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Возможность запуска вручную
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Qt and dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y qt5-qmake libqt5widgets5 lcov gcovr
+
+      - name: Build project
+        run: |
+          qmake
+          make
+
+      - name: Run unit tests
+        run: |
+          cd tests
+          ./run_tests.sh
+
+      - name: Generate coverage report
+        run: |
+          gcovr --html --html-details -o coverage.html
+        if: always()
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.html

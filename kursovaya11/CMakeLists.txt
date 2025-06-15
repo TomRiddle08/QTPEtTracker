@@ -28,7 +28,7 @@ set(PROJECT_SOURCES
 
 # Создаём исполняемый файл
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(kursovuya11
+    qt_add_executable(kursovaya11
         ${PROJECT_SOURCES}
         add_event_dialog.h add_event_dialog.cpp
         pet.h pet.cpp
@@ -60,6 +60,10 @@ set_target_properties(kursovaya11 PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
+# Включаем тестирование
+enable_testing()
+add_subdirectory(tests)
 
 # Установка (для дистрибуции)
 include(GNUInstallDirs)
