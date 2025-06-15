@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Возможность запуска вручную
+  workflow_dispatch:
 
 jobs:
   build:
@@ -14,28 +14,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install Qt and dependencies
+      - name: Install Qt and tools
         run: |
           sudo apt update
           sudo apt install -y qt5-qmake libqt5widgets5 lcov gcovr
 
       - name: Build project
         run: |
-          qmake
+          mkdir build
+          cd build
+          cmake ..
           make
 
       - name: Run unit tests
         run: |
-          cd tests
-          ./run_tests.sh
+          cd build
+          ctest --output-on-failure
 
       - name: Generate coverage report
         run: |
+          cd build
           gcovr --html --html-details -o coverage.html
         if: always()
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: coverage.html
+          path: build/coverage.html
