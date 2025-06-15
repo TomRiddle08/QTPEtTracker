@@ -2,43 +2,64 @@ name: QtPetTracker CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Install Qt and tools
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.0'  # Или '5.15.2' для Qt5
+          modules: 'qtbase qttools qtdeclarative qt5compat'
+          cached: true
+
+      - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y qt5-qmake libqt5widgets5 lcov gcovr
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            lcov \
+            gcovr
+
+      - name: Configure project
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} ..  # Для Qt5: ${{ env.Qt5_DIR }}
 
       - name: Build project
         run: |
-          mkdir build
           cd build
-          cmake ..
-          make
+          make -j4
 
-      - name: Run unit tests
+      - name: Run tests
         run: |
           cd build
           ctest --output-on-failure
 
-      - name: Generate coverage report
+      - name: Generate coverage
         run: |
           cd build
-          gcovr --html --html-details -o coverage.html
-        if: always()
+          lcov --capture --directory . --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '/opt/*' '*/tests/*' --output-file coverage.filtered.info
+          genhtml coverage.filtered.info --output-directory coverage-report
+          gcovr --xml-pretty --output=coverage.xml
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: build/coverage.html
+          path: |
+            build/coverage-report/**
+            build/coverage.xml
+          if-no-files-found: error
