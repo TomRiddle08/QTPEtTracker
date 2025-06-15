@@ -1,11 +1,10 @@
-name: QtPetTracker CI
+name: Qt CI Pipeline
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -16,19 +15,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Install Qt (official method)
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.5.0'
-          modules: 'qtbase qttools qtdeclarative qt5compat'
-          cached: true
-
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -36,14 +23,28 @@ jobs:
             cmake \
             ninja-build \
             libgl1-mesa-dev \
+            libxkbcommon-dev \
+            libdbus-1-dev \
+            libssl-dev \
             lcov \
             gcovr
+
+      - name: Install Qt (official binaries)
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.0'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          modules: 'qtbase qttools qtdeclarative'
+          setup-python: false
+          cached: true
 
       - name: Configure project
         run: |
           mkdir -p build
           cd build
-          cmake -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} ..
+          cmake -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }} -GNinja ..
 
       - name: Build project
         run: |
@@ -70,4 +71,3 @@ jobs:
           path: |
             build/coverage-report/**
             build/coverage.xml
-          if-no-files-found: error
